@@ -11,5 +11,6 @@ pip3 install -r requirements.txt
 ## AWX minikube provision
 ```bash
 ansible-playbook awx_install_playbook.yml
+minikube service -n awx awx-service --url
 kubectl get secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode ; echo
 ```
