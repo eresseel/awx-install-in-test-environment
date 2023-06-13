@@ -14,3 +14,8 @@ ansible-playbook awx_install_playbook.yml
 minikube service -n awx awx-service --url
 kubectl get secret -n awx awx-admin-password -o jsonpath="{.data.password}" | base64 --decode ; echo
 ```
+
+## Create AWX test client
+```bash
+vagrant up
+```
