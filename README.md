@@ -1,8 +1,15 @@
 # awx-install-in-test-environment
 
-## Run script
+## Prepare environment
 ```bash
-bash install.sh
+python3 -m venv .venv
+source .venv/bin/activate
+
+pip3 install -r requirements.txt
 ```
 
-AWX operator homepage: https://github.com/ansible/awx-operator
+## AWX minikube provision
+```bash
+ansible-playbook awx_install_playbook.yml
+kubectl get secret awx-admin-password -o jsonpath="{.data.password}" | base64 --decode ; echo
+```

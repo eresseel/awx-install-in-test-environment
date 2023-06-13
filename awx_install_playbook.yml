@@ -1,0 +1,84 @@
+---
+- name: Install AWX in minikube
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Get latest release JSON
+      ansible.builtin.uri:
+        url: "https://api.github.com/repos/ansible/awx-operator/releases/latest"
+        return_content: yes
+      register: response
+
+    - name: Get tag_name value
+      ansible.builtin.set_fact:
+        tag_name: "{{ response.content | from_json | json_query('tag_name') }}"
+
+    - name: Git checkout
+      ansible.builtin.git:
+        repo: 'https://github.com/ansible/awx-operator.git'
+        dest: ./awx-operator
+        version: "{{ tag_name }}"
+        update: no
+
+    - name: Create a k8s namespace
+      kubernetes.core.k8s:
+        name: awx
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Get AWX operator status
+      k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: awx
+      register: operator_info
+
+    - name: Run make deploy command
+      ansible.builtin.command: make deploy
+      args:
+        chdir: ./awx-operator
+      when: operator_info.resources | length == 0
+
+    - name: Wait until operator is ready
+      k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: awx
+      register: operator_info
+      until: operator_info.resources | map(attribute='status.phase') | select('match', '^Running$') | list
+      retries: 30
+      delay: 30
+
+    - name: Create a PVC
+      kubernetes.core.k8s:
+        state: present
+        src: ./files/pvc.yml
+      register: pvc_result
+
+    - name: Wait until PVC is bound
+      k8s_info:
+        api_version: v1
+        kind: PersistentVolumeClaim
+        namespace: awx
+        name: awx-static-data-pvc
+      register: pvc_info
+      until: pvc_info.resources | map(attribute='status.phase') | select('match', '^Bound$') | list
+      retries: 30
+      delay: 30
+
+    - name: Create AWX
+      kubernetes.core.k8s:
+        state: present
+        src: ./files/awx.yml
+
+    - name: Wait until AWX is ready
+      k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: awx
+      register: pod_facts
+      until: pod_facts.resources | length == 4 and pod_facts.resources | map(attribute='status.phase') | select('match', '^Running$') | list
+      retries: 30
+      delay: 30
