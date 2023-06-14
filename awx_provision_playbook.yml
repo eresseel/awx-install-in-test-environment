@@ -1,0 +1,67 @@
+---
+- name: AWX
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get private key
+      slurp:
+        src: "./id_rsa_files/id_rsa"
+      register: ssh_key
+
+    - name: Add tower credentials
+      tower_credential:
+        tower_host: "{{ tower_host }}"
+        tower_oauthtoken: "{{ tower_oauthtoken }}"
+        name: awx_test_credential
+        credential_type: Machine
+        organization: Default
+        state: present
+        inputs:
+          ssh_key_data: "{{ ssh_key['content'] | b64decode }}"
+      run_once: true
+
+    - name: Add tower inventory
+      tower_inventory:
+        tower_host: "{{ tower_host }}"
+        tower_oauthtoken: "{{ tower_oauthtoken }}"
+        name: awx_test_inventory
+        organization: "Default"
+        state: present
+
+    - name: Add tower project
+      tower_project:
+        tower_host: "{{ tower_host }}"
+        tower_oauthtoken: "{{ tower_oauthtoken }}"
+        name: awx_test_project
+        organization: Default
+        scm_type: git
+        scm_branch: main
+        scm_url: https://github.com/eresseel/awx-install-in-test-environment.git
+        scm_clean: true
+        state: present
+
+    - name: Add tower host
+      tower_host:
+        tower_host: "{{ tower_host }}"
+        tower_oauthtoken: "{{ tower_oauthtoken }}"
+        name: awx_test_host
+        inventory: awx_test_inventory
+        state: present
+        enabled: yes
+        variables:
+          ansible_host: 192.168.59.213
+          ansible_user: "root"
+
+    - name: Add tower job template
+      tower_job_template:
+        tower_host: "{{ tower_host }}"
+        tower_oauthtoken: "{{ tower_oauthtoken }}"
+        name: awx_test_template
+        job_type: run
+        organization: Default
+        inventory: awx_test_inventory
+        project: awx_test_project
+        playbook: awx_test_playbook.yml
+        credentials:
+          - awx_test_credential
+        state: "present"

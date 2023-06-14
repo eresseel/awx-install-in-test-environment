@@ -1,4 +1,0 @@
----
-- src: git+https://github.com/eresseel/ansible_role_apt.git
-  name: apt
-  version: main

@@ -35,7 +35,7 @@ Vagrant.configure("2") do |config|
 
     provision_vm = <<-SCRIPT
         apt update
-        apt install python3 -y
+        apt install -y python3
     SCRIPT
 
     machines=[ {
@@ -121,7 +121,7 @@ Vagrant.configure("2") do |config|
                     node.vm.provision "shell" do |s|
                         if(File.directory?(sh[:ssh_key_path]))
                             ssh_pub_key = File.readlines("#{sh[:ssh_key_path]}/#{sh[:ssh_key_name]}.pub").first.strip
-                            s.inline = "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys"
+                            s.inline = "echo #{ssh_pub_key} >> /root/.ssh/authorized_keys"
                         end
                     end
                 end

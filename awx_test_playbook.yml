@@ -14,8 +14,6 @@
       apt_gpg_keys:
         - url: https://download.docker.com/linux/ubuntu/gpg
           keyring: /etc/apt/keyrings/docker.gpg
-      apt_deb_install:
-        - url: https://download.teamviewer.com/download/linux/teamviewer_amd64.deb
       apt_install:
         - name: mc
         - name: ncdu
